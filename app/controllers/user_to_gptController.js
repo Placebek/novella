@@ -1,4 +1,4 @@
-const UserToGpt = require('../models/userToGptModel');  
+const UserToGpt = require('../models/user_to_gptModel');  
 const Request = require('../models/requestModel'); 
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
@@ -8,8 +8,6 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.getUserHistory = async (req, res) => {
-    const { userId } = req.params; 
-
     const token = req.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -19,9 +17,7 @@ exports.getUserHistory = async (req, res) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        if (decoded.id !== Number(userId)) {
-            return res.status(403).json({ message: 'Нет прав доступа к этой истории.' });
-        }
+        const userId = decoded.id;
 
         const history = await UserToGpt.findAll({
             where: { request_id: userId },
