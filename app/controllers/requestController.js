@@ -1,6 +1,7 @@
 const Request = require('../models/requestModel');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const axios = require('axios');
 
 
 dotenv.config();
@@ -33,6 +34,25 @@ exports.createRequest = async (req, res) => {
             message: 'Request created successfully.',
             request: newRequest,
         });
+
+        try {
+            const fastApiResponse = await axios.post('http://fastapi-server-address/api/endpoint', {
+                mp3: newRequest.mp3,
+                text: newRequest.text,
+                title: newRequest.title,
+                user_id: newRequest.user_id,
+            });
+
+            console.log('FastAPI response:', fastApiResponse.data);
+        } catch (fastApiError) {
+            console.error('Error sending data to FastAPI:', fastApiError.message);
+        }
+
+        res.status(201).json({
+            message: 'Request created successfully and sent to FastAPI.',
+            request: newRequest,
+        });
+        
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error. Please try again later.' });
