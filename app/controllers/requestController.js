@@ -16,7 +16,7 @@ exports.createRequest = async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET); 
-        const { mp3, text, titel } = req.body; 
+        const { mp3, text, title } = req.body; 
 
         if (!mp3) {
             return res.status(400).json({ message: 'MP3 field is required.' });
@@ -25,7 +25,7 @@ exports.createRequest = async (req, res) => {
         const newRequest = await Request.create({
             mp3,
             text,
-            titel, 
+            title, 
             user_id: decoded.id, 
         });
 

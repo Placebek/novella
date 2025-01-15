@@ -11,7 +11,7 @@ const Request = sequelize.define('Request', {
     },
     mp3: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
     },
     text: {
         type: DataTypes.TEXT,
@@ -25,7 +25,7 @@ const Request = sequelize.define('Request', {
             key: 'id',
         },
     },
-    titel: {
+    title: {
         type: DataTypes.STRING,
         allowNull: true,
     },
