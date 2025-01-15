@@ -11,7 +11,7 @@ const UserToGpt = sequelize.define('UserToGpt', {
     },
     variant: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     parent_id: {
         type: DataTypes.INTEGER,
@@ -32,7 +32,7 @@ const UserToGpt = sequelize.define('UserToGpt', {
         onDelete: 'CASCADE',
     },
     variants: {
-        type: DataTypes.JSON,
+        type: DataTypes.STRING,
         allowNull: true,
     },
 }, {

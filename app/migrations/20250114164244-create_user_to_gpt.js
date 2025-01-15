@@ -10,7 +10,7 @@ module.exports = {
           },
           variant: {
               type: Sequelize.STRING,
-              allowNull: false,
+              allowNull: true,
           },
           parent_id: {
               type: Sequelize.INTEGER,
@@ -33,7 +33,7 @@ module.exports = {
               onUpdate: 'CASCADE',
           },
           variants: {
-              type: Sequelize.JSON,
+              type: Sequelize.STRING,
               allowNull: true,
           },
           createdAt: {

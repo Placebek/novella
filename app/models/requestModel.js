@@ -25,6 +25,10 @@ const Request = sequelize.define('Request', {
             key: 'id',
         },
     },
+    titel: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     is_activate: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,

@@ -11,7 +11,7 @@ module.exports = {
             },
             mp3: {
                 type: Sequelize.STRING,
-                allowNull: true,
+                allowNull: false,
             },
             text: {
                 type: Sequelize.TEXT,
@@ -25,6 +25,10 @@ module.exports = {
                     key: 'id',
                 },
                 onDelete: 'CASCADE',
+            },
+            title: {
+                type: Sequelize.STRING,
+                allowNull: true,
             },
             is_activate: {
                 type: Sequelize.BOOLEAN,
