@@ -67,6 +67,23 @@ class LoginScreen extends StatelessWidget {
                         obscureText: true,
                       ),
                       const SizedBox(height: 20),
+                      // ElevatedButton(
+                      //     onPressed: () async {
+                      //       // Логика входа
+                      //       final token = await ApiService.login(
+                      //         emailController.text,
+                      //         passwordController.text,
+                      //       );
+                      //       if (token != null) {
+                      //         await StorageService.saveToken(token);
+                      //         Navigator.pushReplacementNamed(context, '/home');
+                      //       } else {
+                      //         ScaffoldMessenger.of(context).showSnackBar(
+                      //           const SnackBar(
+                      //               content: Text('Неверные данные')),
+                      //         );
+                      //       }
+                      //     },
                       ElevatedButton(
                         onPressed: () {
                           // Логика входа

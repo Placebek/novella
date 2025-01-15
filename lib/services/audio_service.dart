@@ -10,7 +10,7 @@ class AudioService {
   static Future<void> initialize() async {
     _recorder = FlutterSoundRecorder();
 
-    // Запрашиваем разрешения на запись
+    // Запрашиваем разрешение на использование микрофона
     final status = await Permission.microphone.request();
     if (!status.isGranted) {
       throw Exception('Нет разрешения на использование микрофона');
@@ -27,7 +27,7 @@ class AudioService {
 
     try {
       final path =
-          '${Directory.systemTemp.path}/recording.aac'; // Временный путь
+          '${Directory.systemTemp.path}/recording_${DateTime.now().millisecondsSinceEpoch}.aac'; // Генерируем уникальный путь
       await _recorder!.startRecorder(toFile: path);
       _isRecording = true;
       print('Запись начата, файл сохраняется в $path');
@@ -37,7 +37,7 @@ class AudioService {
   }
 
   /// Остановить запись
-  static Future<void> stopRecording() async {
+  static Future<String> stopRecording() async {
     if (!_isRecording) {
       throw Exception('Запись не активна');
     }
@@ -45,7 +45,12 @@ class AudioService {
     try {
       final path = await _recorder!.stopRecorder();
       _isRecording = false;
-      print('Запись завершена, файл сохранён в $path');
+      if (path != null) {
+        print('Запись завершена, файл сохранён в $path');
+        return path; // Возвращаем путь к записанному файлу
+      } else {
+        throw Exception('Не удалось получить путь к файлу');
+      }
     } catch (e) {
       throw Exception('Ошибка при остановке записи: $e');
     }
@@ -55,5 +60,22 @@ class AudioService {
   static Future<void> dispose() async {
     await _recorder!.closeRecorder();
     _recorder = null;
+  }
+
+  /// Отправка записи на сервер
+  static Future<void> uploadRecording(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        throw Exception('Файл не найден');
+      }
+
+      // Симуляция загрузки файла
+      print('Загрузка файла $filePath на сервер...');
+      await Future.delayed(Duration(seconds: 2)); // Имитируем задержку загрузки
+      print('Файл успешно загружен на сервер');
+    } catch (e) {
+      throw Exception('Ошибка при загрузке файла: $e');
+    }
   }
 }
