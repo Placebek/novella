@@ -72,3 +72,45 @@ exports.createUserToGpt = async (req, res) => {
         res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };
+
+
+exports.postUserToGpt = async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication token is required.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET); 
+        const { variant, parent_id, request_id, variants } = req.body;
+
+        const request = await Request.findByPk(request_id);
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found.' });
+        }
+
+        if (parent_id) {
+            const parent = await UserToGpt.findByPk(parent_id);
+            if (!parent) {
+                return res.status(404).json({ message: 'Parent UserToGpt not found.' });
+            }
+        }
+
+        const newUserToGpt = await UserToGpt.create({
+            variant,
+            parent_id,
+            request_id,
+            variants,
+        });
+
+        res.status(201).json({
+            message: 'UserToGpt created successfully.',
+            userToGpt: newUserToGpt,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
