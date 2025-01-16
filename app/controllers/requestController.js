@@ -72,3 +72,31 @@ exports.createRequest = async (req, res) => {
     }
 };
 
+
+exports.updateRequest = async (req, res) => {
+    const { id } = req.params;  
+    const { mp3, text, title, is_activate } = req.body;  
+
+    try {
+        const request = await Request.findByPk(id);
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found.' });
+        }
+
+        const updatedRequest = await request.update({
+            mp3: mp3 || request.mp3,  
+            text: text || request.text,  
+            title: title || request.title,
+            is_activate: is_activate !== undefined ? is_activate : request.is_activate, 
+        });
+
+        res.status(200).json({
+            message: 'Request updated successfully.',
+            request: updatedRequest,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
