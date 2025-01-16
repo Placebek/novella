@@ -1,15 +1,13 @@
-const UserToGpt = require('../models/user_to_gptModel');
-const Request = require('../models/requestModel');
-const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
+const { UserToGpt, Request } = require('../models');
 const axios = require('axios');
-
+const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const FASTAPI_USERNAME = process.env.FASTAPI_USERNAME; 
-const FASTAPI_PASSWORD = process.env.FASTAPI_PASSWORD; 
+const JWT_SECRET = process.env.JWT_SECRET; 
+const FASTAPI_USERNAME = process.env.FASTAPI_USERNAME;
+const FASTAPI_PASSWORD = process.env.FASTAPI_PASSWORD;
 
 exports.createUserToGpt = async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -19,58 +17,57 @@ exports.createUserToGpt = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET); 
-        const { variant, parent_id, request_id, variants } = req.body;
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { variant, parent_id, request_id } = req.body;
+
+        if (!variant || !parent_id || !request_id) {
+            return res.status(400).json({ message: 'Variant, parent_id, and request_id are required.' });
+        }
 
         const request = await Request.findByPk(request_id);
+
         if (!request) {
-            return res.status(404).json({ message: 'Request not found.' });
+            return res.status(404).json({ message: `Request with id ${request_id} not found.` });
         }
 
-        if (parent_id) {
-            const parent = await UserToGpt.findByPk(parent_id);
-            if (!parent) {
-                return res.status(404).json({ message: 'Parent UserToGpt not found.' });
-            }
-        }
-
-        const newUserToGpt = await UserToGpt.create({
+        const userToGpt = await UserToGpt.create({
             variant,
             parent_id,
             request_id,
-            variants,
         });
 
-        res.status(201).json({
-            message: 'UserToGpt created successfully.',
-            userToGpt: newUserToGpt,
-        });
-
-        try {
-            const fastApiResponse = await axios.post(
-                'http://fastapi-server-address/api/endpoint', 
-                {
-                    variant: newUserToGpt.variant,
-                    parent_id: newUserToGpt.parent_id,
-                    request_id: newUserToGpt.request_id,
-                    variants: newUserToGpt.variants,
+        const fastApiResponse = await axios.post(
+            'http://172.20.10.2:8000/novellas/g4f',
+            { text: variant }, 
+            {
+                headers: {
+                    'Authorization': `Bearer ${JWT_SECRET}`, 
                 },
-                {
-                    auth: {
-                        username: FASTAPI_USERNAME,
-                        password: FASTAPI_PASSWORD,
-                    },
-                }
-            );
+                auth: {
+                    username: FASTAPI_USERNAME,
+                    password: FASTAPI_PASSWORD,
+                },
+            }
+        );
 
-            console.log('FastAPI response:', fastApiResponse.data);
-        } catch (fastApiError) {
-            console.error('Error sending data to FastAPI:', fastApiError.message);
+        const options = fastApiResponse.data?.options;
+
+        if (Array.isArray(options)) {
+            const variantsList = options.map(option => Object.values(option)[0]);
+            await userToGpt.update({
+                variants: variantsList.join(' | '), 
+            });
+
+            return res.status(201).json({
+                message: 'UserToGpt created and updated successfully.',
+                userToGpt,
+            });
+        } else {
+            return res.status(400).json({ message: 'Invalid response from FastAPI: options field is missing or not an array.' });
         }
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error. Please try again later.' });
+        console.error('Error in creating UserToGpt:', error.message);
+        return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };
-
-
