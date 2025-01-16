@@ -5,6 +5,7 @@ const axios = require('axios');
 const upload = require('../config/multerConfig');
 const fs = require('fs');
 const FormData = require('form-data');
+const UserToGpt = require('../models/user_to_gptModel');
 
 dotenv.config();
 
@@ -30,7 +31,6 @@ exports.createRequest = async (req, res) => {
 
         const mp3Path = req.file.path;
 
-        // Создаем запись в базе данных
         const newRequest = await Request.create({
             mp3: mp3Path,
             text: null,
@@ -38,7 +38,6 @@ exports.createRequest = async (req, res) => {
             user_id: decoded.id,
         });
 
-        // Отправляем MP3 файл на FastAPI
         const formData = new FormData();
         formData.append('audio_file', fs.createReadStream(mp3Path));
 
@@ -57,17 +56,26 @@ exports.createRequest = async (req, res) => {
                 }
             );
 
-            const { title, text } = fastApiResponse.data;
+            const { title, text, options } = fastApiResponse.data;
 
-            // Обновляем запись в базе данных
             await newRequest.update({
                 title,
                 text,
             });
 
+            if (options && Array.isArray(options)) {
+                const variantsList = options.map(option => Object.values(option)[0]);
+
+                await UserToGpt.create({
+                    variants: variantsList.join(' | '),  
+                    request_id: newRequest.id,
+                });
+            }
+
             return res.status(201).json({
                 message: 'Request created and updated successfully.',
                 request: newRequest,
+                options,
             });
         } catch (fastApiError) {
             console.error('Error sending MP3 to FastAPI:', fastApiError.message);
@@ -81,4 +89,3 @@ exports.createRequest = async (req, res) => {
         return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };
-

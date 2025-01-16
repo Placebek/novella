@@ -34,6 +34,10 @@ module.exports = {
                 type: Sequelize.BOOLEAN,
                 defaultValue: true,
             },
+            is_finished: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: true,
+            },
             createdAt: {
                 type: Sequelize.DATE,
                 allowNull: false,

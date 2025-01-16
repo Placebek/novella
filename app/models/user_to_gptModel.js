@@ -32,7 +32,7 @@ const UserToGpt = sequelize.define('UserToGpt', {
         onDelete: 'CASCADE',
     },
     variants: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: true,
     },
 }, {

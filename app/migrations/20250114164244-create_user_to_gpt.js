@@ -33,7 +33,7 @@ module.exports = {
               onUpdate: 'CASCADE',
           },
           variants: {
-              type: Sequelize.STRING,
+              type: Sequelize.TEXT,
               allowNull: true,
           },
           createdAt: {
