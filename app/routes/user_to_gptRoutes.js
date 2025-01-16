@@ -3,6 +3,6 @@ const router = express.Router();
 const user_to_gptController = require('../controllers/user_to_gptController');
 
 
-router.get('/history', user_to_gptController.getUserHistory);
+router.get('/create/usertogpts', user_to_gptController.createUserToGpt);
 
 module.exports = router;

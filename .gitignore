@@ -1,3 +1,5 @@
 node_modules/
 .env
-app/config
+app/config/config.json
+app/config/db.js
+uploads/
