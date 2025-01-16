@@ -67,10 +67,10 @@ class RegisterScreen extends StatelessWidget {
                       TextField(
                         controller: phoneController,
                         decoration: const InputDecoration(
-                          labelText: 'Телефон',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.all(10.0),
-                        ),
+                            labelText: 'Телефон',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.all(10.0),
+                            focusColor: Color.fromRGBO(0, 0, 0, 1)),
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 15),
