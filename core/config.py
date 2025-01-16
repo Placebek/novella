@@ -15,8 +15,6 @@ class Settings(BaseSettings):
     DB_NAME: str
     DB_USER: str
 
-    TOKEN_SECRET_KEY: str
-
     def reload_env(self):
         load_dotenv(override=True)
 
@@ -25,11 +23,5 @@ class Settings(BaseSettings):
         self.reload_env()
         return f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
     
-    TOKEN_ALGORITHM: str = 'HS256'
-    TOKEN_EXPIRE_MiNUTES: int = 60 * 15
-
-
-    
-    DATETIME_FORMAT: str = '%d-%m-%Y %H:%M:%S'
 
 settings = Settings()

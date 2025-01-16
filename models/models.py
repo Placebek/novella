@@ -5,6 +5,15 @@ from sqlalchemy import Boolean, String, Integer, ForeignKey, Column, Text, DateT
 from sqlalchemy.orm import relationship
 from database.db import Base
 
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(30))
+    hash_password = Column(String)
+    created_at: Optional[datetime] = Column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
+
 
 class Request(Base):
     __tablename__ = "requests"

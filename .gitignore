@@ -27,6 +27,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+task/
+audio1.mp3
+first_story.mp3
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

@@ -3,9 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from app.api.router import route as request_route
-# from router import route as ws_route
-
+from app.router import route
 
 app = FastAPI()
 
@@ -26,7 +24,7 @@ app.add_middleware(
     allow_methods=["*"],  # Разрешить все методы (GET, POST, и т.д.)
     allow_headers=["*"],  # Разрешить все заголовки
 )
-app.include_router(request_route, prefix="/request")
+app.include_router(route)
 
 
 
