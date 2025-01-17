@@ -9,8 +9,10 @@ from chatgpt.free_chat import get_novella_title, get_novellas_options_g4f, get_o
 
 async def request_novella(audio_file) -> RequestResponse:
     file_data = await audio_file.read()
+    print('qqqq', audio_file)
     with open(audio_file.filename, "wb") as temp_file:
         temp_file.write(file_data)
+
     audio = load_audio(audio_file.filename)
     if not isinstance(audio, np.ndarray):
         raise HTTPException(status_code=400, detail="Uploaded file is not a valid audio format")
