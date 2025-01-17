@@ -1,20 +1,12 @@
 
-from base64 import b64decode
-import os
-from pathlib import Path
-from uuid import uuid4
-
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.novella.schemes.create import RequestCreate, OptionsCreate
+from app.api.novella.schemes.create import OptionsCreate
 from services.context import authenticate
 from database.db import get_db
 from app.api.novella.commands.novella_bll import request_novella, get_options_bll, the_end_novella_bll
 from app.api.novella.schemes.response import RequestResponse, OptionsResponse
 from dotenv import load_dotenv
-
-from whisper_model.audio_transcribe import transcriber
-import io
 
 load_dotenv()
 router = APIRouter()

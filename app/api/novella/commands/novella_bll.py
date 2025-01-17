@@ -15,15 +15,13 @@ async def request_novella(audio_file) -> RequestResponse:
     if not isinstance(audio, np.ndarray):
         raise HTTPException(status_code=400, detail="Uploaded file is not a valid audio format")
     try:
-        print("DDDDDDD")
         text = transcriber.audio(audio_file=audio)
-        print("DDDDDDD")
         title = get_novella_title(text=text)
-        print("DDDDDDD")
         options = None
+
         while not options:
-            print("SSSSSSSSS")
             options = get_novellas_options_g4f(text=text)
+            
         return RequestResponse(
             text=text,
             title=title,
