@@ -10,7 +10,7 @@ const UserToGpt = sequelize.define('UserToGpt', {
         primaryKey: true,
     },
     variant: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: true,
     },
     parent_id: {

@@ -9,7 +9,7 @@ module.exports = {
               primaryKey: true,
           },
           variant: {
-              type: Sequelize.STRING,
+              type: Sequelize.TEXT,
               allowNull: true,
           },
           parent_id: {

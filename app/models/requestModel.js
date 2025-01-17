@@ -33,6 +33,10 @@ const Request = sequelize.define('Request', {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
+    is_finished: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
 }, {
     timestamps: true,
 });
