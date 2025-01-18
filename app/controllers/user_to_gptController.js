@@ -22,16 +22,6 @@ const getParentHierarchy = async (parentId) => {
     return null;
 };
 
-const concatenateVariants = (node) => {
-    let concatenatedText = node.variant || '';
-    console.log("SSSSSSSSSSSSSS", node.parent.variant)
-    while (node.parent) {
-        concatenatedText = `${node.parent.variant || ''} ${concatenatedText}`.trim();
-        node = node.parent;
-    }
-    return concatenatedText;
-};
-
 exports.createUserToGpt = async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
 
@@ -41,10 +31,10 @@ exports.createUserToGpt = async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const { variant, parent_id, request_id } = req.body;
+        const { variant, request_id } = req.body;
 
-        if (!variant || !parent_id || !request_id) {
-            return res.status(400).json({ message: 'Variant, parent_id, and request_id are required.' });
+        if (!variant || !request_id) {
+            return res.status(400).json({ message: 'Variant and request_id are required.' });
         }
 
         const request = await Request.findByPk(request_id);
@@ -53,27 +43,30 @@ exports.createUserToGpt = async (req, res) => {
             return res.status(404).json({ message: `Request with id ${request_id} not found.` });
         }
 
+        const parent_id = (await UserToGpt.findOne({
+            where: { request_id },
+            order: [['createdAt', 'DESC']],
+        }))?.id;
+
         const userToGpt = await UserToGpt.create({
             variant,
             parent_id,
             request_id,
         });
 
-        const parentData = await getParentHierarchy(parent_id);
-
-        const concatenatedText = concatenateVariants({
-            variant,
-            parent: parentData,
+        const allVariants = await UserToGpt.findAll({
+            where: { request_id },
+            order: [['createdAt', 'ASC']],
         });
 
-        if (concatenatedText.length > 3800) {
+        const concatenatedText = allVariants.map((entry) => entry.variant).join(' ').trim();
+
+        if (concatenatedText.length > 1000) {
             const fastApiResponse = await axios.post(
-                'http://172.20.10.2:8000/novellas/theEnd',
+                'http://172.20.10.4:8000/novellas/theEnd',
                 { text: concatenatedText },
                 {
-                    headers: {
-                        'Authorization': `Bearer ${JWT_SECRET}`,
-                    },
+                    headers: { Authorization: `Bearer ${JWT_SECRET}` },
                     auth: {
                         username: FASTAPI_USERNAME,
                         password: FASTAPI_PASSWORD,
@@ -84,31 +77,26 @@ exports.createUserToGpt = async (req, res) => {
             await request.update({
                 is_activate: false,
                 is_finished: true,
+                final_story: concatenatedText,
             });
+
+            const parentHierarchy = await getParentHierarchy(parent_id);
 
             return res.status(200).json({
                 message: 'The concatenated text exceeded the limit and was sent to /novellas/theEnd.',
                 userToGpt: {
-                    id: userToGpt.id,
-                    variant,
-                    parent_id,
-                    request_id,
-                    updatedAt: userToGpt.updatedAt,
-                    createdAt: userToGpt.createdAt,
-                    parent: parentData, 
-                    variants: userToGpt.variants || null,
+                    ...userToGpt.toJSON(),
+                    parent: parentHierarchy,
                 },
-                options: fastApiResponse.data?.options || [], 
+                final_story: concatenatedText, 
             });
         }
 
         const fastApiResponse = await axios.post(
-            'http://172.20.10.2:8000/novellas/g4f',
+            'http://172.20.10.4:8000/novellas/g4f',
             { text: concatenatedText },
             {
-                headers: {
-                    'Authorization': `Bearer ${JWT_SECRET}`,
-                },
+                headers: { Authorization: `Bearer ${JWT_SECRET}` },
                 auth: {
                     username: FASTAPI_USERNAME,
                     password: FASTAPI_PASSWORD,
@@ -119,11 +107,13 @@ exports.createUserToGpt = async (req, res) => {
         const options = fastApiResponse.data?.options;
 
         if (Array.isArray(options)) {
+            const parentHierarchy = await getParentHierarchy(parent_id);
+
             return res.status(201).json({
                 message: 'UserToGpt created and updated successfully.',
                 userToGpt: {
                     ...userToGpt.toJSON(),
-                    parent: parentData,
+                    parent: parentHierarchy,
                 },
                 options,
             });
@@ -136,3 +126,39 @@ exports.createUserToGpt = async (req, res) => {
     }
 };
 
+exports.finalizeStory = async (req, res) => {
+    const { request_id, final_variant } = req.body;
+
+    if (!request_id || !final_variant) {
+        return res.status(400).json({ message: 'Request_id and final_variant are required.' });
+    }
+
+    try {
+        const request = await Request.findByPk(request_id);
+
+        if (!request) {
+            return res.status(404).json({ message: `Request with id ${request_id} not found.` });
+        }
+
+        const allVariants = await UserToGpt.findAll({
+            where: { request_id },
+            order: [['createdAt', 'ASC']],
+        });
+
+        const finalStory = allVariants.map((entry) => entry.variant).join(' ') + ` ${final_variant}`;
+
+        await request.update({
+            is_activate: false,
+            is_finished: true,
+            final_story: finalStory.trim(),
+        });
+
+        return res.status(200).json({
+            message: 'Final story created successfully.',
+            final_story: finalStory.trim(),
+        });
+    } catch (error) {
+        console.error('Error finalizing story:', error.message);
+        return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
