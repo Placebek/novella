@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class LoginScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -50,6 +52,7 @@ class LoginScreen extends StatelessWidget {
                       const SizedBox(height: 20),
                       TextField(
                         controller: emailController,
+                        textInputAction: TextInputAction.next,
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           border: OutlineInputBorder(),
@@ -67,44 +70,44 @@ class LoginScreen extends StatelessWidget {
                         obscureText: true,
                       ),
                       const SizedBox(height: 20),
-                      // ElevatedButton(
-                      //     onPressed: () async {
-                      //       // Логика входа
-                      //       final token = await ApiService.login(
-                      //         emailController.text,
-                      //         passwordController.text,
-                      //       );
-                      //       if (token != null) {
-                      //         await StorageService.saveToken(token);
-                      //         Navigator.pushReplacementNamed(context, '/home');
-                      //       } else {
-                      //         ScaffoldMessenger.of(context).showSnackBar(
-                      //           const SnackBar(
-                      //               content: Text('Неверные данные')),
-                      //         );
-                      //       }
-                      //     },
                       ElevatedButton(
-                        onPressed: () {
-                          // Логика входа
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Вход выполнен')),
-                          );
-                          Navigator.pushReplacementNamed(context, '/home');
+                        onPressed: () async {
+                          if (emailController.text.isEmpty ||
+                              passwordController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Заполните все поля'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          try {
+                            final token = await ApiService.login(
+                              emailController.text,
+                              passwordController.text,
+                            );
+                            if (token != null) {
+                              await StorageService.saveToken(token);
+                              Navigator.pushReplacementNamed(context, '/home');
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Неверные данные')),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Ошибка: $e')),
+                            );
+                          }
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromRGBO(87, 142, 126, 1),
-                        ),
-                        child: const Text(
-                          'Войти',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        child: const Text('Войти'),
                       ),
                       const SizedBox(height: 10),
                       TextButton(
                         onPressed: () {
-                          // Переход на экран регистрации
                           Navigator.pushReplacementNamed(context, '/register');
                         },
                         child: const Text(

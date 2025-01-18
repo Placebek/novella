@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AudioService {
   static FlutterSoundRecorder? _recorder;
@@ -70,10 +72,34 @@ class AudioService {
         throw Exception('Файл не найден');
       }
 
-      // Симуляция загрузки файла
-      print('Загрузка файла $filePath на сервер...');
-      await Future.delayed(Duration(seconds: 2)); // Имитируем задержку загрузки
-      print('Файл успешно загружен на сервер');
+      // Получение токена из SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) {
+        throw Exception('Токен не найден');
+      }
+
+      // Создание URL и заголовков
+      final uri =
+          Uri.parse('http://192.168.0.13:8080/api/requests/create/requests');
+      final headers = {
+        'Authorization': 'Bearer $token', // Добавляем токен
+        'Content-Type': 'multipart/form-data',
+      };
+
+      // Создаём multipart-запрос
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(headers);
+      request.files.add(await http.MultipartFile.fromPath('mp3', filePath));
+
+      // Отправляем запрос
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        print('Файл успешно загружен на сервер');
+      } else {
+        print('Ошибка при загрузке файла: ${response.statusCode}');
+      }
     } catch (e) {
       throw Exception('Ошибка при загрузке файла: $e');
     }

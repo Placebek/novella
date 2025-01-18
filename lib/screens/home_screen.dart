@@ -10,7 +10,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<String> unfinishedNovels = [];
   bool isRecording = false;
-  double buttonSize = 60.0; // Размер кнопки по умолчанию
+  bool isUploading = false; // Индикатор загрузки на сервер
+  double buttonSize = 60.0;
   Timer? _timer;
   int _recordingDuration = 0;
 
@@ -29,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchUnfinishedNovels() async {
-    // Имитируем получение данных с сервера
     await Future.delayed(Duration(seconds: 2));
     setState(() {
       unfinishedNovels = [
@@ -57,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      // Логика отмены
                       Navigator.of(context).pop();
                     },
                     style: ElevatedButton.styleFrom(
@@ -76,22 +75,30 @@ class _HomeScreenState extends State<HomeScreen> {
                         isRecording = true;
                         _recordingDuration = 0;
                       });
-                      print('Началась запись'); // Для проверки
                       await AudioService.startRecording();
                       _startTimer(setModalState);
                     },
                     onLongPressUp: () async {
                       setModalState(() {
                         isRecording = false;
+                        isUploading = true;
                       });
-                      print('Запись завершена'); // Для проверки
+                      _stopTimer();
+
                       try {
                         final filePath = await AudioService.stopRecording();
                         print("Файл записан: $filePath");
+
+                        // Отправка файла на сервер
+                        await AudioService.uploadRecording(filePath);
+                        print("Файл успешно загружен на сервер");
                       } catch (e) {
-                        print("Ошибка: $e");
+                        print("Ошибка при обработке: $e");
+                      } finally {
+                        setModalState(() {
+                          isUploading = false;
+                        });
                       }
-                      _stopTimer();
                     },
                     child: Container(
                       width: 60,
@@ -102,11 +109,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? Colors.red
                             : Color.fromRGBO(87, 142, 126, 1),
                       ),
-                      child: Icon(
-                        Icons.mic,
-                        color: Colors.white,
-                        size: 30,
-                      ),
+                      child: isUploading
+                          ? CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : Icon(
+                              Icons.mic,
+                              color: Colors.white,
+                              size: 30,
+                            ),
                     ),
                   ),
                   SizedBox(height: 20),
@@ -138,10 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(255, 250, 236, 1), // Задний фон
+      backgroundColor: Color.fromRGBO(255, 250, 236, 1),
       appBar: AppBar(
         title: Text('Главная'),
-        backgroundColor: Color.fromRGBO(87, 142, 126, 1), // Цвет AppBar
+        backgroundColor: Color.fromRGBO(87, 142, 126, 1),
       ),
       drawer: Drawer(
         backgroundColor: Color.fromRGBO(245, 236, 213, 1),
@@ -150,45 +161,36 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Container(
               padding: EdgeInsets.only(left: 20, top: 50),
-              height: 85, // Высота поля заголовка
-              color: Color.fromRGBO(87, 142, 126, 1), // Фон заголовка
-              // alignment: Alignment.centerLeft, // Выравнивание текста по центру
+              height: 85,
+              color: Color.fromRGBO(87, 142, 126, 1),
               child: Text(
                 'Меню',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Color.fromRGBO(67, 67, 67, 1),
-                  // Цвет текста
                 ),
               ),
             ),
             ListTile(
               title: Text('Настройки', style: TextStyle(fontSize: 18)),
-              onTap: () {
-                // Реализуйте логику перехода в настройки
-              },
+              onTap: () {},
             ),
             ListTile(
               title: Text('История записей', style: TextStyle(fontSize: 18)),
-              onTap: () {
-                // Реализуйте логику перехода на экран истории
-              },
+              onTap: () {},
             ),
             ListTile(
               titleAlignment: ListTileTitleAlignment.bottom,
               title: Text('Выход', style: TextStyle(fontSize: 18)),
-              onTap: () {
-                // Реализуйте логику выхода из приложения
-              },
+              onTap: () {},
             ),
           ],
         ),
       ),
       body: SafeArea(
         child: unfinishedNovels.isEmpty
-            ? Center(
-                child: CircularProgressIndicator()) // Показ индикатора загрузки
+            ? Center(child: CircularProgressIndicator())
             : ListView.builder(
                 padding: EdgeInsets.all(16),
                 itemCount: unfinishedNovels.length,
@@ -199,9 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ListTile(
                       title: Text(unfinishedNovels[index]),
                       trailing: Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        // Логика перехода к редактированию новеллы
-                      },
+                      onTap: () {},
                     ),
                   );
                 },

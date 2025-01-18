@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://172.20.10.4:8080/api';
+  static const String baseUrl = 'http://192.168.0.13:8080/api';
 
   static Future<String?> login(String email, String password) async {
     final url = Uri.parse('$baseUrl/users/login');
