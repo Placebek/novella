@@ -6,6 +6,7 @@ const upload = require('../config/multerConfig');
 const fs = require('fs');
 const FormData = require('form-data');
 const UserToGpt = require('../models/user_to_gptModel');
+const User = require('../models/userModel');
 
 dotenv.config();
 
@@ -86,6 +87,39 @@ exports.createRequest = async (req, res) => {
         }
     } catch (error) {
         console.error('Error creating request:', error);
+        return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
+
+
+exports.getRequests = async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication token is required.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.id;
+
+        const requests = await Request.findAll({
+            where: { user_id: userId },
+            include: [
+                {
+                    model: User, 
+                    attributes: ['id', 'username', 'email'], 
+                }
+            ]
+        });
+
+        if (requests.length === 0) {
+            return res.status(404).json({ message: 'No requests found for this user.' });
+        }
+
+        return res.status(200).json({ requests });
+    } catch (error) {
+        console.error('Error fetching requests:', error.message);
         return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };

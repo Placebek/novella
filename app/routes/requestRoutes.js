@@ -6,5 +6,6 @@ const upload = require('../config/multerConfig');
 
 router.post('/create/requests', upload.single('mp3'), requestController.createRequest);
 // router.put('/:id', requestController.updateRequest);
+router.get('/get', requestController.getRequests)
 
 module.exports = router;
