@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/audio_service.dart';
+import '../screens/request_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -89,9 +90,39 @@ class _HomeScreenState extends State<HomeScreen> {
                         final filePath = await AudioService.stopRecording();
                         print("Файл записан: $filePath");
 
-                        // Отправка файла на сервер
-                        await AudioService.uploadRecording(filePath);
-                        print("Файл успешно загружен на сервер");
+                        final response =
+                            await AudioService.uploadRecording(filePath);
+
+                        setState(() {
+                          try {
+                            // Проверяем, что response и его ключи существуют
+                            if (response['request'] != null &&
+                                response['request']['title'] != null) {
+                              // Добавляем title в unfinishedNovels
+                              unfinishedNovels
+                                  .add(response['request']['title']);
+                            } else {
+                              // Обработка ситуации, если данные отсутствуют
+                              unfinishedNovels.add('Unknown Title');
+                            }
+                          } catch (e) {
+                            print("Ошибка при обработке: $e");
+                            // В случае ошибки добавляем заглушку
+                            unfinishedNovels.add('Unknown Title');
+                          }
+                        });
+
+                        print("Ответ сервера: $response");
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => RequestScreen(
+                              request: response[
+                                  'request'], // Передаём объект "request"
+                              initialOptions: response[
+                                  'options'], // Передаём список "options"
+                            ),
+                          ),
+                        );
                       } catch (e) {
                         print("Ошибка при обработке: $e");
                       } finally {

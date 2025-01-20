@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
@@ -65,7 +66,7 @@ class AudioService {
   }
 
   /// Отправка записи на сервер
-  static Future<void> uploadRecording(String filePath) async {
+  static Future<Map<String, dynamic>> uploadRecording(String filePath) async {
     try {
       final file = File(filePath);
       if (!file.existsSync()) {
@@ -81,7 +82,7 @@ class AudioService {
 
       // Создание URL и заголовков
       final uri =
-          Uri.parse('http://192.168.0.13:8080/api/requests/create/requests');
+          Uri.parse('http://192.168.96.31:8080/api/requests/create/requests');
       final headers = {
         'Authorization': 'Bearer $token', // Добавляем токен
         'Content-Type': 'multipart/form-data',
@@ -94,12 +95,10 @@ class AudioService {
 
       // Отправляем запрос
       final response = await request.send();
-
-      if (response.statusCode == 200) {
-        print('Файл успешно загружен на сервер');
-      } else {
-        print('Ошибка при загрузке файла: ${response.statusCode}');
-      }
+      final responseBody = await response.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+      print('Ответ сервера: $data');
+      return data;
     } catch (e) {
       throw Exception('Ошибка при загрузке файла: $e');
     }
