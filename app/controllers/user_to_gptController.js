@@ -126,6 +126,7 @@ exports.createUserToGpt = async (req, res) => {
     }
 };
 
+
 exports.finalizeStory = async (req, res) => {
     const { request_id, final_variant } = req.body;
 

@@ -1,12 +1,11 @@
-const app = require('./app'); 
-const http = require('http'); 
-const WebSocket = require('ws'); 
+const app = require('./app');
+const http = require('http');
+const WebSocket = require('ws');
 
 const PORT = 8080;
 const HOST = '172.20.10.4';
 
 const server = http.createServer(app);
-
 const wss = new WebSocket.Server({ server });
 
 let clients = [];
@@ -26,6 +25,7 @@ wss.on('connection', (ws) => {
 });
 
 const sendToClients = (message) => {
+    console.log('Sending message to clients:', message);
     clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({ message }));
@@ -33,14 +33,8 @@ const sendToClients = (message) => {
     });
 };
 
-app.post('/api/user_to_gpts/post/usertogpts', (req, res) => {
-    const { variant, parent_id, request_id, variants } = req.body;
-
-    sendToClients(`New UserToGpt created with variant: ${variant}`);
-
-    res.status(201).json({ message: 'UserToGpt created successfully.' });
-});
-
 server.listen(PORT, HOST, () => {
     console.log(`Server is running on http://${HOST}:${PORT}`);
 });
+
+module.exports = { sendToClients };

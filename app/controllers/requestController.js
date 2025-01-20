@@ -123,3 +123,81 @@ exports.getRequests = async (req, res) => {
         return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };
+
+
+exports.getUserToGptsByRequestId = async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication token is required.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.id; 
+        const { request_id } = req.params;
+
+        if (!request_id) {
+            return res.status(400).json({ message: 'Request ID is required.' });
+        }
+
+        const request = await Request.findOne({
+            where: { id: request_id, user_id: userId },
+        });
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found or does not belong to the user.' });
+        }
+
+        const userToGpts = await UserToGpt.findAll({
+            where: { request_id },
+            attributes: ['id', 'variant', 'parent_id', 'createdAt', 'updatedAt'], 
+        });
+
+        if (userToGpts.length === 0) {
+            return res.status(404).json({ message: 'No UserToGpt entries found for this request.' });
+        }
+
+        const response = {
+            request: {
+                id: request.id,
+                title: request.title,
+                text: request.text,
+            },
+            userToGpts,
+        };
+
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error('Error fetching UserToGpt entries:', error.message);
+        return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
+
+
+exports.getUnfinishedRequests = async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication token is required.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.id;
+
+        const unfinishedRequests = await Request.findAll({
+            where: { user_id: userId, is_finished: false },
+            attributes: ['id', 'mp3', 'text', 'title', 'is_activate', 'createdAt', 'updatedAt'], 
+        });
+
+        if (unfinishedRequests.length === 0) {
+            return res.status(404).json({ message: 'No unfinished requests found for this user.' });
+        }
+
+        return res.status(200).json({ unfinishedRequests });
+    } catch (error) {
+        console.error('Error fetching unfinished requests:', error.message);
+        return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
