@@ -1,6 +1,8 @@
 const app = require('./app');
 const http = require('http');
 const WebSocket = require('ws');
+const notificationQueue = require('./app/jobs/notificationQueue');
+const User = require('./app/models/userModel');
 
 const PORT = 8080;
 const HOST = '172.20.10.4';
@@ -8,33 +10,40 @@ const HOST = '172.20.10.4';
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-let clients = [];
+let clients = new Map();
 
-wss.on('connection', (ws) => {
-    console.log('New WebSocket connection');
-    clients.push(ws);
-
-    ws.on('message', (message) => {
-        console.log('Received from client:', message);
-    });
+wss.on('connection', (ws, req) => {
+    const userId = new URLSearchParams(req.url.split('?')[1]).get('userId');
+    if (userId) {
+        clients.set(userId, ws);
+        console.log(`User ${userId} connected.`);
+    }
 
     ws.on('close', () => {
-        console.log('Connection closed');
-        clients = clients.filter(client => client !== ws);
+        clients.delete(userId);
+        console.log(`User ${userId} disconnected.`);
     });
 });
 
-const sendToClients = (message) => {
-    console.log('Sending message to clients:', message);
-    clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ message }));
+notificationQueue.process(async (job) => {
+    console.log('Processing notification job...');
+    const users = await User.findAll();
+
+    for (const user of users) {
+        const ws = clients.get(user.id.toString());
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ message: `Hello, ${user.username}! Это уведомление.` }));
         }
-    });
-};
+    }
+
+    return { status: 'Notifications sent to all users' };
+});
 
 server.listen(PORT, HOST, () => {
     console.log(`Server is running on http://${HOST}:${PORT}`);
-});
 
-module.exports = { sendToClients };
+    setInterval(() => {
+        notificationQueue.createJob({}).save();
+        console.log('Notification job added to queue.');
+    },   5 * 60 * 1000);
+});

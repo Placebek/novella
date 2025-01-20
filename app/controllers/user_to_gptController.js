@@ -2,6 +2,7 @@ const { UserToGpt, Request } = require('../models');
 const axios = require('axios');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const { inactivityQueue } = require('../../queue');
 
 dotenv.config();
 
@@ -53,6 +54,8 @@ exports.createUserToGpt = async (req, res) => {
             parent_id,
             request_id,
         });
+        
+        inactivityQueue.createJob({ userId: userToGpt.id }).save();
 
         const allVariants = await UserToGpt.findAll({
             where: { request_id },
