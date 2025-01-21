@@ -3,6 +3,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const notificationQueue = require('./app/jobs/notificationQueue');
 const User = require('./app/models/userModel');
+const UserToGpt = require('./app/models/user_to_gptModel');
+const sequelize = require('./app/config/db');
 
 const PORT = 8080;
 const HOST = '172.20.10.4';
@@ -26,17 +28,53 @@ wss.on('connection', (ws, req) => {
 });
 
 notificationQueue.process(async (job) => {
-    console.log('Processing notification job...');
-    const users = await User.findAll();
+    console.log('Checking for new UserToGpt activity...');
 
-    for (const user of users) {
-        const ws = clients.get(user.id.toString());
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ message: `Hello, ${user.username}! Это уведомление.` }));
+    const latestEntry = await UserToGpt.findOne({
+        order: [['createdAt', 'DESC']],
+    });
+
+    const now = new Date();
+    if (latestEntry) {
+        const lastActivity = new Date(latestEntry.createdAt);
+        const diffInMinutes = Math.floor((now - lastActivity) / 60000);
+
+        if (diffInMinutes >= 5 && !notificationSent) {
+            console.log(`No new activity for 5+ minutes. Sending notifications...`);
+            const users = await User.findAll();
+
+            for (const user of users) {
+                const ws = clients.get(user.id.toString());
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(
+                        JSON.stringify({
+                            message: `Сізді қызықты новеллаңыз күтіп тұр! Қайда жүрсің бауырым?`,
+                        })
+                    );
+                }
+            }
+            notificationSent = true; 
+        } else if (diffInMinutes < 5) {
+            notificationSent = false; 
         }
+    } else if (!notificationSent) {
+        console.log('No records found in UserToGpt table. Sending notifications...');
+        const users = await User.findAll();
+
+        for (const user of users) {
+            const ws = clients.get(user.id.toString());
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(
+                    JSON.stringify({
+                        message: `Привет, ${user.username}! В таблице UserToGpt пока нет записей.`,
+                    })
+                );
+            }
+        }
+        notificationSent = true; 
     }
 
-    return { status: 'Notifications sent to all users' };
+    return { status: 'Activity check completed' };
 });
 
 server.listen(PORT, HOST, () => {
@@ -45,5 +83,5 @@ server.listen(PORT, HOST, () => {
     setInterval(() => {
         notificationQueue.createJob({}).save();
         console.log('Notification job added to queue.');
-    },   5 * 60 * 1000);
+    },    30 * 1000);
 });
