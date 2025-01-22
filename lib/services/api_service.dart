@@ -5,7 +5,7 @@ import 'storage_service.dart';
 class ApiService {
   static const String baseUrl = 'http://192.168.96.31:8080/api';
 
-  static Future<String?> login(String email, String password) async {
+  static Future<bool> login(String email, String password) async {
     final url = Uri.parse('$baseUrl/users/login');
     try {
       final response = await http.post(
@@ -19,17 +19,27 @@ class ApiService {
         }),
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data[
-            'token']; // Убедитесь, что ключ 'token' соответствует вашему API
+      // Парсим ответ
+      final data = json.decode(response.body);
+
+      // Проверяем наличие ключей
+      if (data.containsKey('token') && data.containsKey('user')) {
+        final token = data['token'];
+        final userId = data['user']['id'];
+
+        // Сохраняем токен и user ID
+        await StorageService.saveToken(token);
+        await StorageService.saveUserId(userId);
+
+        print('Токен и user_id успешно сохранены.');
+        return true;
       } else {
-        print('Ошибка: ${response.body}');
-        return null;
+        print('Ошибка: Токен или user данные отсутствуют.');
+        return false;
       }
     } catch (e) {
       print('Ошибка подключения: $e');
-      return null;
+      return false;
     }
   }
 

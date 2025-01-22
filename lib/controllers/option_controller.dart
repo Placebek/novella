@@ -1,25 +1,26 @@
-import '../models/option.dart';
+import 'package:novella_ai/repositories/option_repository.dart';
 
-class OptionController {
-  final OptionRepository _optionRepository = OptionRepository();
+class OptionsController {
+  final OptionsRepository repository;
 
-  Future<List<Option>> getOptions() async {
-    return await _optionRepository.getOptions();
+  OptionsController(this.repository);
+
+  /// Получение списка опций
+  Future<List<Map<String, String>>> fetchOptions() async {
+    try {
+      return (await repository.getOptions()).cast<Map<String, String>>();
+    } catch (e) {
+      throw Exception('Ошибка получения опций: $e');
+    }
   }
 
-  Future<Option> getOption(String id) async {
-    return await _optionRepository.getOption(id);
-  }
-
-  Future<void> addOption(Option option) async {
-    return await _optionRepository.addOption(option);
-  }
-
-  Future<void> updateOption(Option option) async {
-    return await _optionRepository.updateOption(option);
-  }
-
-  Future<void> deleteOption(String id) async {
-    return await _optionRepository.deleteOption(id);
+  /// Отправка выбранного варианта и получение обновленных опций
+  Future<List<Map<String, dynamic>>> sendVariant(
+      String variant, int requestId, String token) async {
+    try {
+      return await repository.sendVariant(variant, requestId, token);
+    } catch (e) {
+      throw Exception('Ошибка отправки варианта: $e');
+    }
   }
 }

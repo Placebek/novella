@@ -2,18 +2,32 @@ import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
-// import 'services/notification_service.dart';
+import 'services/notification_service.dart';
 import 'services/storage_service.dart';
 import 'screens/register_screen.dart';
+import 'services/websocket_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Инициализация локального хранилища
-  await StorageService.getToken();
+  NotificationService notificationService = NotificationService();
 
-  // Инициализация пуш-уведомлений
-  // await NotificationService.initialize();
+  await notificationService.init();
+  print("Notifications initialized.");
+
+  // Инициализация локального хранилища
+  int? userId = await StorageService.getUserId();
+
+  // Проверяем наличие userId
+  if (userId == null) {
+    print('Пользователь не авторизован. WebSocket не подключен.');
+  } else {
+    const String websocketBaseUrl = 'ws://192.168.96.31:8080/';
+    String websocketUrl = '$websocketBaseUrl?user_id=$userId';
+    print('WebSocket URL: $websocketUrl');
+
+    WebSocketService.connect(websocketUrl);
+  }
 
   runApp(MyApp());
 }

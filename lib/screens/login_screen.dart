@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../services/storage_service.dart';
 
 class LoginScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -84,19 +83,11 @@ class LoginScreen extends StatelessWidget {
                           }
 
                           try {
-                            final token = await ApiService.login(
+                            await ApiService.login(
                               emailController.text,
                               passwordController.text,
                             );
-                            if (token != null) {
-                              await StorageService.saveToken(token);
-                              Navigator.pushReplacementNamed(context, '/home');
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Неверные данные')),
-                              );
-                            }
+                            Navigator.pushReplacementNamed(context, '/home');
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Ошибка: $e')),

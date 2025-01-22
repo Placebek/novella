@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:novella_ai/services/option_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RequestScreen extends StatefulWidget {
@@ -14,51 +13,45 @@ class RequestScreen extends StatefulWidget {
 }
 
 class _RequestScreenState extends State<RequestScreen> {
+  final OptionsApi api = OptionsApi();
   List<Map<String, dynamic>> optionsList = [];
+  List<Map<String, dynamic>> permanentList = [];
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    // Загружаем начальные опции
     optionsList = List<Map<String, dynamic>>.from(widget.initialOptions);
   }
 
-  // Функция для отправки выбранного варианта на сервер
-  Future<void> sendVariantToServer(String variant, int requestId) async {
+  Future<void> sendVariant(
+      String variant, int requestId, String? shortStory) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     if (token == null) {
-      throw Exception('Токен не найден');
+      print('Токен не найден');
+      return;
     }
-    const String apiUrl =
-        "http://192.168.96.31:8080/api/user_to_gpts/create/usertogpts";
+    print('Отправка варианта: $shortStory - $variant');
+    setState(() {
+      isLoading = true;
+    });
 
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "variant": variant,
-          "request_id": requestId,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-
-        if (responseData['options'] != null) {
-          setState(() {
-            optionsList.addAll(responseData['options']);
-          });
-        }
-      } else {
-        print("Ошибка при отправке: ${response.statusCode}");
-        print("Ответ сервера: ${response.body}");
-      }
+      final updatedOptions = await api.sendVariant(variant, requestId, token);
+      setState(() {
+        // Добавляем выбранный вариант вместе с short_story в постоянный список
+        permanentList.add({'short_story': shortStory, 'variant': variant});
+        // Обновляем список новых вариантов
+        optionsList = updatedOptions;
+      });
     } catch (e) {
-      print("Ошибка: $e");
+      print('Ошибка отправки варианта: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -71,52 +64,106 @@ class _RequestScreenState extends State<RequestScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ListView.builder(
-          itemCount: optionsList.length,
-          itemBuilder: (context, index) {
-            final option = optionsList[index];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (option.containsKey('short_story'))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(
-                      'История: ${option['short_story']}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: permanentList.length +
+                    optionsList.length +
+                    (isLoading ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index < permanentList.length) {
+                    // Отображаем сохраненные пары short_story и variant
+                    final permanentOption = permanentList[index];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (permanentOption['short_story'] != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text(
+                              'История: ${permanentOption['short_story']}',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        optionButton(permanentOption['variant']),
+                        SizedBox(height: 16),
+                      ],
+                    );
+                  } else if (index <
+                      permanentList.length + optionsList.length) {
+                    final option = optionsList[index - permanentList.length];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (option.containsKey('short_story'))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text(
+                              'История: ${option['short_story']}',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        if (option.containsKey('first'))
+                          GestureDetector(
+                            onTap: () {
+                              sendVariant(
+                                option['first'],
+                                widget.request['id'],
+                                option.containsKey('short_story')
+                                    ? option['short_story']
+                                    : null,
+                              );
+                            },
+                            child: optionButton(option['first']),
+                          ),
+                        if (option.containsKey('second'))
+                          GestureDetector(
+                            onTap: () {
+                              sendVariant(
+                                option['second'],
+                                widget.request['id'],
+                                option.containsKey('short_story')
+                                    ? option['short_story']
+                                    : null,
+                              );
+                            },
+                            child: optionButton(option['second']),
+                          ),
+                        if (option.containsKey('third'))
+                          GestureDetector(
+                            onTap: () {
+                              sendVariant(
+                                option['third'],
+                                widget.request['id'],
+                                option.containsKey('short_story')
+                                    ? option['short_story']
+                                    : null,
+                              );
+                            },
+                            child: optionButton(option['third']),
+                          ),
+                        SizedBox(height: 16),
+                      ],
+                    );
+                  } else {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: CircularProgressIndicator(),
                       ),
-                    ),
-                  ),
-                if (option.containsKey('first'))
-                  GestureDetector(
-                    onTap: () {
-                      sendVariantToServer(
-                          option['first'], widget.request['id']);
-                    },
-                    child: optionButton(option['first']),
-                  ),
-                if (option.containsKey('second'))
-                  GestureDetector(
-                    onTap: () {
-                      sendVariantToServer(
-                          option['second'], widget.request['id']);
-                    },
-                    child: optionButton(option['second']),
-                  ),
-                if (option.containsKey('third'))
-                  GestureDetector(
-                    onTap: () {
-                      sendVariantToServer(
-                          option['third'], widget.request['id']);
-                    },
-                    child: optionButton(option['third']),
-                  ),
-                SizedBox(height: 16),
-              ],
-            );
-          },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

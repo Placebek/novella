@@ -1,13 +1,15 @@
 class Option {
+  String? short_story;
   String? first;
   String? second;
   String? third;
 
-  Option({this.first, this.second, this.third});
+  Option({this.first, this.second, this.third, this.short_story});
 
   /// Factory для создания объекта из JSON
   factory Option.fromJson(Map<String, dynamic> json) {
     return Option(
+      short_story: json['short_story'],
       first: json['first'],
       second: json['second'],
       third: json['third'],
@@ -17,6 +19,7 @@ class Option {
   /// Конвертация объекта в JSON
   Map<String, dynamic> toJson() {
     return {
+      'short_story': short_story,
       'first': first,
       'second': second,
       'third': third,
