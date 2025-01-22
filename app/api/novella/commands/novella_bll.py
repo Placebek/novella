@@ -10,22 +10,25 @@ from chatgpt.free_chat import get_novella_title, get_novellas_options_g4f, get_o
 async def request_novella(audio_file) -> RequestResponse:
     file_data = await audio_file.read()
     print('qqqq', audio_file)
-    with open(audio_file.filename, "wb") as temp_file:
+    file_path = f'D:\\Hackaton\\story_crafter\\fastapi\\novella\\{audio_file.filename}'
+    with open(file_path, "wb") as temp_file:
         temp_file.write(file_data)
 
-    audio = load_audio(audio_file.filename)
+    audio = load_audio(file_path)
     if not isinstance(audio, np.ndarray):
         raise HTTPException(status_code=400, detail="Uploaded file is not a valid audio format")
     try:
         print("DDDDDDD")
         text = transcriber.audio(audio_file=audio)
-        print("DDDDDDD")
+        print("DDDDDDD", text)
         title = get_novella_title(text=text)
         print("DDDDDDD")
         options = None
         while not options:
             print("SSSSSSSSS")
             options = get_novellas_options_g4f(text=text)
+        print("DDDDDDD", options)
+        
         return RequestResponse(
             text=text,
             title=title,
