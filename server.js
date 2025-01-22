@@ -48,6 +48,6 @@ app.post('/api/user_to_gpts/post/usertogpts', (req, res) => {
 });
 
 // Запуск HTTP сервера
-server.listen(8000, '172.20.10.4', () => {
-    console.log('Server running on http://172.20.10.4:8000');
-});
+server.listen(8080, '192.168.96.31', () => {
+	console.log('Server running on http://192.168.96.31:8080')
+})
